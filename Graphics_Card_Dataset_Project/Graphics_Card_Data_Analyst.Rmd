@@ -4,7 +4,10 @@ output: html_document
 author: Jordan Arce
 ---
 # *Introduction*
-The graphics card market is extremely bipolar currently as of Oct. 2021, and it seems that it is difficult to get any GPUs* from most retailers. So I wanted to see if it is there any justification to buy any graphics cards between markup of 25-35%. I hypothesized that secondhand is extremely inflated compared to the MSRP prices, and it would not be wise to purchase any GPUs. The main dataset I had scraped from Ebay that is a sample of of 796 new listed GPU as of Oct. 17. I cleaned and filtered the dataset to Nvidia's recent lineup of graphics cards from Gtx 3060 to Gtx 3090. We then present our findings into multiple visualizations and dataframe of statistics of each card. 
+The graphics card market is extremely bipolar currently as of Oct. 2021, and it seems that it is difficult to get any GPUs* from most retailers. So I wanted to see if it is 
+there any justification to buy any graphics cards between markup of 25-35%. I hypothesized that secondhand is extremely inflated compared to the MSRP prices, and it would not be 
+wise to purchase any GPUs. The main dataset I had scraped from Ebay that is a sample of of 796 new listed GPU as of Oct. 17. I cleaned and filtered the dataset to Nvidia's 
+recent lineup of graphics cards from Gtx 3060 to Gtx 3090. We then present our findings into multiple visualizations and dataframe of statistics of each card. 
 
 
 ## Importing libraries
