@@ -1,0 +1,209 @@
+---
+title: "Graphic Card Data Project"
+output: html_document
+author: Jordan Arce
+---
+# *Introduction*
+The graphics card market is extremely bipolar currently as of Oct. 2021, and it seems that it is difficult to get any GPUs* from most retailers. So I wanted to see if it is there any justification to buy any graphics cards between markup of 25-35%. I hypothesized that secondhand is extremely inflated compared to the MSRP prices, and it would not be wise to purchase any GPUs. The main dataset I had scraped from Ebay that is a sample of of 796 new listed GPU as of Oct. 17. I cleaned and filtered the dataset to Nvidia's recent lineup of graphics cards from Gtx 3060 to Gtx 3090. We then present our findings into multiple visualizations and dataframe of statistics of each card. 
+
+
+## Importing libraries
+```{r Libraries, results='hold'}
+library(tidyverse)
+library(janitor)
+library(ggplot2)
+```
+
+```{r Importing the Dataset}
+graphicsCards <- read_csv("~/Python practices/web scrabing/Graphicscards_18-Oct-2021.csv")
+head(graphicsCards)
+tail(graphicsCards)
+colnames(graphicsCards)
+```
+## Make A Copy of the Dataset & Clean it
+```{r Cleaning some of the main Dataset}
+year <- "/2021"
+copy_df <- distinct(graphicsCards)
+copy_df$product_name <- toupper(copy_df$product_name)
+copy_df$product_name <- trimws(copy_df$product_name, which = c("both"))
+copy_df$price <- as.numeric(gsub('[$,]','',copy_df$price))
+copy_df$date <- substr(copy_df$date, start = 1, stop = 6) 
+copy_df$date <- gsub("Oct-","10/",copy_df$date)
+copy_df$date <- str_c(copy_df$date,year)
+copy_df$date <- as.Date(copy_df$date, "%m/%d/%Y")
+copy_df$condition <- trimws(copy_df$condition, which = c("both"))
+copy_df <- copy_df %>% filter(condition != "Parts Only") %>% 
+  drop_na()
+copy_df
+```
+
+
+
+## Filter some of this data to only show Nvidia's new line of Graphics cards this past year.
+```{r Filtering Nvedia Cards}
+# 3060 & 3060Ti 
+gtx_3060_offered <- copy_df %>% 
+  filter(grepl(".3060 ",product_name)& !grepl(".3060 TI", product_name))
+gtx_3060ti_offered <- copy_df %>% 
+  filter(grepl(".3060TI",product_name )| grepl(".3060 TI",product_name))
+# 3070 & 3070TI
+gtx_3070_offered <- copy_df %>% 
+  filter(grepl(".3070 ",product_name)& !grepl(".3070 TI", product_name))
+gtx_3070ti_offered <- copy_df %>% 
+  filter(grepl(".3070TI",product_name )| grepl(".3070 TI",product_name))
+# 3080 & 3080Ti
+gtx_3080_offered <- copy_df %>% 
+  filter(grepl(".3080 ",product_name)& !grepl(".3080 TI", product_name))
+gtx_3080ti_offered <- copy_df %>% 
+  filter((grepl(".3080TI",product_name )| grepl(".3080 TI",product_name))& price > 500)
+# 3090
+gtx_3090_offered <- copy_df %>% 
+  filter(grepl(".3090.",product_name))
+
+```
+
+## Now that we filtered graphics cards to only Nvidia cards. Lets further clean the data.
+```{r}
+
+gtx_3060_offered$product_name <- "3060"
+gtx_3060ti_offered$product_name <- "3060Ti"
+gtx_3070_offered$product_name <- "3070"
+gtx_3070ti_offered$product_name <- "3070Ti"
+gtx_3080_offered$product_name <- "3080"
+gtx_3080ti_offered$product_name <- "3080Ti"
+gtx_3090_offered$product_name <- "3090"
+
+```
+
+## Now lets merge all these Datasets
+```{r}
+nvidia_df <- rbind(gtx_3060_offered,gtx_3060ti_offered,gtx_3070_offered,gtx_3070ti_offered,gtx_3080_offered,gtx_3080ti_offered,gtx_3090_offered)
+nvidia_df
+```
+
+
+## Now lets get some summarize some of this merged data frame
+```{r}
+stats_Ngc_df <- nvidia_df %>% group_by(product_name) %>%  summarize(num_of_models = n(),avg_price = mean(price), sd = sd(price), max_price = max(price), min_price = min(price))
+stats_Ngc_df
+```
+## Now lets make a dataframe of the MSRP Values of each these cards
+```{r}
+
+msrp_price <- c(329.99,399.99,499.99,599.99,699.99,1199.99,1499.99)
+edited_stats_Ngc_df <- stats_Ngc_df %>% mutate("msrp"=msrp_price)
+#reorder msrp first 
+edited_stats_Ngc_df <- edited_stats_Ngc_df[,c(1,2,7,3,4,5,6)]
+edited_stats_Ngc_df <- edited_stats_Ngc_df %>% 
+  mutate("markup_avgprice_percent" = (avg_price/msrp)*100-100)
+edited_stats_Ngc_df
+```
+
+## Now lets visualize the data
+```{r}
+msrp_price_gc <- ggplot(data = edited_stats_Ngc_df)+
+  geom_col(mapping = aes(x = product_name, y = msrp, fill = product_name))+
+  labs(x = "Nvidia Models", y = "MSRP Prices",
+       title = "MSRP Price of Nvidia Graphics Cards",
+       subtitle = "Prices of Cards on Release Date",
+       caption = "According to Nvidia on Release Date of Cards",
+       fill = "Model")+
+  annotate(geom = "text", x = 1, y = 375, label = "$329.99")+
+  annotate(geom = "text", x = 2, y = 450, label = "$399.99")+
+  annotate(geom = "text", x = 3, y = 550, label = "$499.99")+
+  annotate(geom = "text", x = 4, y = 650, label = "$599.99")+
+  annotate(geom = "text", x = 5, y = 750, label = "$699.99")+
+  annotate(geom = "text", x = 6, y = 1250, label = "$1199.99")+
+  annotate(geom = "text", x = 7, y = 1550, label = "$1499.99")+
+  theme(plot.title = element_text(face = "bold", size = 24, color = "dark green"),
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        plot.caption = element_text(face = "italic"),
+        plot.caption.position = "plot")
+
+price_vs_model <- ggplot(data = edited_stats_Ngc_df)+
+  geom_col(mapping = aes(x=product_name, y = avg_price, fill = product_name))+
+  labs(x = "Nvidia Models",y = "Average Price",
+       title = "Price of Graphics Cards" ,
+       subtitle = "Sample of Nvidia Cards Being Sold on Ebay",
+       fill = "Model",
+       caption = "Scraped Sample from Oct 17 to Oct 18")+
+  annotate(geom = "text", x = 1, y = 860, label = "$768.99")+
+  annotate(geom = "text", x = 2, y = 1030, label = "$937.82")+
+  annotate(geom = "text", x = 3, y = 1295, label = "$1195.97")+
+  annotate(geom = "text", x = 4, y = 1345, label = "$1243.82")+
+  annotate(geom = "text", x = 5, y = 1945, label = "$1844.08")+
+  annotate(geom = "text", x = 6, y = 2030, label = "$1928.47")+
+  annotate(geom = "text", x = 7, y = 2960, label = "$2858.98")+
+  theme(plot.title = element_text(face = "bold", size = 24, color = "dark green"),
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        plot.caption = element_text(face = "italic"),
+        plot.caption.position = "plot")
+
+percent_markup <- ggplot(data = edited_stats_Ngc_df)+
+  geom_col(mapping = aes(y=product_name, x= markup_avgprice_percent, fill = markup_avgprice_percent))+
+  labs(y = "Nvidia Models",x = "Percentage of Markup",
+       title = "Percent Markup of Graphics Cards",
+       subtitle = "Sample of Nvidia Cards Being Sold on Ebay",
+       fill = "Percent of Markup",
+       caption = "Scraped Sample from Oct 17 to Oct 18")+
+  theme(plot.title = element_text(face = "bold", size = 24, color = "dark green"),
+        axis.title.x = element_text(face = "bold"),
+        axis.title.y = element_text(face = "bold"),
+        plot.caption = element_text(face = "italic"),
+        plot.caption.position = "plot")+
+  annotate(geom = "text", x = 150, y = 1, label = "133.03%")+
+  annotate(geom = "text", x = 150, y = 2, label = "134.46%")+
+  annotate(geom = "text", x = 155, y = 3, label = "139.20%")+
+  annotate(geom = "text", x = 122, y = 4, label = "107.31%")+
+  annotate(geom = "text", x = 178, y = 5, label = "163.44%")+
+  annotate(geom = "text", x = 75, y = 6, label = "60.71%")+
+  annotate(geom = "text", x = 105, y = 7, label = "90.60%")
+  
+msrp_price_gc
+price_vs_model
+percent_markup
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
